@@ -19,3 +19,6 @@ For non-Chinese users, Google Translate will help you.
 * 原理解析: https://zhuanlan.zhihu.com/p/111388877
 * 原理与源码: https://zhuanlan.zhihu.com/p/29719106
 * 论文与代码解析: https://blog.csdn.net/nksjc/article/details/76401092
+
+###
+* a [link](https://blog.csdn.net/weixin_46363611/article/details/108869992?utm_medium=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromMachineLearnPai2~default-10.pc_relevant_baidujshouduan&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~BlogCommendFromMachineLearnPai2~default-10.pc_relevant_baidujshouduan) that introduce some derivations 
