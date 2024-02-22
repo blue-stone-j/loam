@@ -3,8 +3,6 @@ source code: https://github.com/cuitaixiang/LOAM_NOTED
 
 article: LOAM Lidar Odometry and Mapping in Real-time
 
-You can download article [here](https://github.com/blue-stone-w/example/tree/main/reference).
-
 LOAM中文注解版，若有差错欢迎指正～
 
 I fork from source code and add more comments.
