@@ -33,7 +33,7 @@ float transformBefMapped[6] = {0};
 // mapping传递过来的优化后的位姿
 float transformAftMapped[6] = {0};
 
-ros::Publisher *pubLaserOdometry2Pointer = NULL;
+ros::Publisher *pubLaserOdometry2Pointer        = NULL;
 tf::TransformBroadcaster *tfBroadcaster2Pointer = NULL;
 nav_msgs::Odometry laserOdometry2;
 tf::StampedTransform laserOdometryTrans2;
@@ -77,26 +77,16 @@ void transformAssociateToMap()
   float salz = sin(transformAftMapped[2]);
   float calz = cos(transformAftMapped[2]);
 
-  float srx = -sbcx * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz) -
-              cbcx * sbcy * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) -
-              cbcx * cbcy * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx);
+  float srx          = -sbcx * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz) - cbcx * sbcy * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - cbcx * cbcy * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx);
   transformMapped[0] = -asin(srx);
 
-  float srycrx = sbcx * (cblx * cblz * (caly * salz - calz * salx * saly) - cblx * sblz * (caly * calz + salx * saly * salz) + calx * saly * sblx) -
-                 cbcx * cbcy * ((caly * calz + salx * saly * salz) * (cblz * sbly - cbly * sblx * sblz) + (caly * salz - calz * salx * saly) * (sbly * sblz + cbly * cblz * sblx) - calx * cblx * cbly * saly) +
-                 cbcx * sbcy * ((caly * calz + salx * saly * salz) * (cbly * cblz + sblx * sbly * sblz) + (caly * salz - calz * salx * saly) * (cbly * sblz - cblz * sblx * sbly) + calx * cblx * saly * sbly);
-  float crycrx = sbcx * (cblx * sblz * (calz * saly - caly * salx * salz) - cblx * cblz * (saly * salz + caly * calz * salx) + calx * caly * sblx) +
-                 cbcx * cbcy * ((saly * salz + caly * calz * salx) * (sbly * sblz + cbly * cblz * sblx) + (calz * saly - caly * salx * salz) * (cblz * sbly - cbly * sblx * sblz) + calx * caly * cblx * cbly) -
-                 cbcx * sbcy * ((saly * salz + caly * calz * salx) * (cbly * sblz - cblz * sblx * sbly) + (calz * saly - caly * salx * salz) * (cbly * cblz + sblx * sbly * sblz) - calx * caly * cblx * sbly);
+  float srycrx       = sbcx * (cblx * cblz * (caly * salz - calz * salx * saly) - cblx * sblz * (caly * calz + salx * saly * salz) + calx * saly * sblx) - cbcx * cbcy * ((caly * calz + salx * saly * salz) * (cblz * sbly - cbly * sblx * sblz) + (caly * salz - calz * salx * saly) * (sbly * sblz + cbly * cblz * sblx) - calx * cblx * cbly * saly) + cbcx * sbcy * ((caly * calz + salx * saly * salz) * (cbly * cblz + sblx * sbly * sblz) + (caly * salz - calz * salx * saly) * (cbly * sblz - cblz * sblx * sbly) + calx * cblx * saly * sbly);
+  float crycrx       = sbcx * (cblx * sblz * (calz * saly - caly * salx * salz) - cblx * cblz * (saly * salz + caly * calz * salx) + calx * caly * sblx) + cbcx * cbcy * ((saly * salz + caly * calz * salx) * (sbly * sblz + cbly * cblz * sblx) + (calz * saly - caly * salx * salz) * (cblz * sbly - cbly * sblx * sblz) + calx * caly * cblx * cbly) - cbcx * sbcy * ((saly * salz + caly * calz * salx) * (cbly * sblz - cblz * sblx * sbly) + (calz * saly - caly * salx * salz) * (cbly * cblz + sblx * sbly * sblz) - calx * caly * cblx * sbly);
   transformMapped[1] = atan2(srycrx / cos(transformMapped[0]),
                              crycrx / cos(transformMapped[0]));
 
-  float srzcrx = (cbcz * sbcy - cbcy * sbcx * sbcz) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) -
-                 (cbcy * cbcz + sbcx * sbcy * sbcz) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) +
-                 cbcx * sbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
-  float crzcrx = (cbcy * sbcz - cbcz * sbcx * sbcy) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) -
-                 (sbcy * sbcz + cbcy * cbcz * sbcx) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) +
-                 cbcx * cbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
+  float srzcrx       = (cbcz * sbcy - cbcy * sbcx * sbcz) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) - (cbcy * cbcz + sbcx * sbcy * sbcz) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) + cbcx * sbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
+  float crzcrx       = (cbcy * sbcz - cbcz * sbcx * sbcy) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - (sbcy * sbcz + cbcy * cbcz * sbcx) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) + cbcx * cbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
   transformMapped[2] = atan2(srzcrx / cos(transformMapped[0]), crzcrx / cos(transformMapped[0]));
 
   x1 = cos(transformMapped[2]) * transformIncre[3] - sin(transformMapped[2]) * transformIncre[4];
@@ -132,14 +122,14 @@ void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr &laserOdometry)
 
   geoQuat = tf::createQuaternionMsgFromRollPitchYaw(transformMapped[2], -transformMapped[0], -transformMapped[1]);
 
-  laserOdometry2.header.stamp = laserOdometry->header.stamp;
+  laserOdometry2.header.stamp            = laserOdometry->header.stamp;
   laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
   laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
   laserOdometry2.pose.pose.orientation.z = geoQuat.x;
   laserOdometry2.pose.pose.orientation.w = geoQuat.w;
-  laserOdometry2.pose.pose.position.x = transformMapped[3];
-  laserOdometry2.pose.pose.position.y = transformMapped[4];
-  laserOdometry2.pose.pose.position.z = transformMapped[5];
+  laserOdometry2.pose.pose.position.x    = transformMapped[3];
+  laserOdometry2.pose.pose.position.y    = transformMapped[4];
+  laserOdometry2.pose.pose.position.z    = transformMapped[5];
   pubLaserOdometry2Pointer->publish(laserOdometry2);
 
   // 发送旋转平移量
@@ -183,13 +173,13 @@ int main(int argc, char **argv)
   ros::Subscriber subOdomAftMapped = nh.subscribe<nav_msgs::Odometry>("/aft_mapped_to_init", 5, odomAftMappedHandler);
 
   ros::Publisher pubLaserOdometry2 = nh.advertise<nav_msgs::Odometry>("/integrated_to_init", 5);
-  pubLaserOdometry2Pointer = &pubLaserOdometry2;
-  laserOdometry2.header.frame_id = "/camera_init";
-  laserOdometry2.child_frame_id = "/camera";
+  pubLaserOdometry2Pointer         = &pubLaserOdometry2;
+  laserOdometry2.header.frame_id   = "/camera_init";
+  laserOdometry2.child_frame_id    = "/camera";
 
   tf::TransformBroadcaster tfBroadcaster2;
-  tfBroadcaster2Pointer = &tfBroadcaster2;
-  laserOdometryTrans2.frame_id_ = "/camera_init";
+  tfBroadcaster2Pointer               = &tfBroadcaster2;
+  laserOdometryTrans2.frame_id_       = "/camera_init";
   laserOdometryTrans2.child_frame_id_ = "/camera";
 
   ros::spin();

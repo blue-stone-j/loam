@@ -32,28 +32,28 @@ const int mapFrameNum = 5;
 
 // 时间戳
 double timeLaserCloudCornerLast = 0;
-double timeLaserCloudSurfLast = 0;
-double timeLaserCloudFullRes = 0;
-double timeLaserOdometry = 0;
+double timeLaserCloudSurfLast   = 0;
+double timeLaserCloudFullRes    = 0;
+double timeLaserOdometry        = 0;
 
 // 接收标志
 bool newLaserCloudCornerLast = false;
-bool newLaserCloudSurfLast = false;
-bool newLaserCloudFullRes = false;
-bool newLaserOdometry = false;
+bool newLaserCloudSurfLast   = false;
+bool newLaserCloudFullRes    = false;
+bool newLaserOdometry        = false;
 
-int laserCloudCenWidth = 10; // 意义不明？？？
-int laserCloudCenHeight = 5;
-int laserCloudCenDepth = 10;
-const int laserCloudWidth = 21; // 意义不明？？？
+int laserCloudCenWidth     = 10; // center ID of local map
+int laserCloudCenHeight    = 5;
+int laserCloudCenDepth     = 10;
+const int laserCloudWidth  = 21; // size of local map
 const int laserCloudHeight = 11;
-const int laserCloudDepth = 21;
+const int laserCloudDepth  = 21;
 // 点云方块集合最大数量
 const int laserCloudNum = laserCloudWidth * laserCloudHeight * laserCloudDepth; // 4851
 
-// lidar视域范围内(FOV)的点云集索引？？？
+// lidar视域范围内(FOV)的点云集索引???
 int laserCloudValidInd[125];
-// lidar周围的点云集索引？？？
+// lidar周围的点云集索引???
 int laserCloudSurroundInd[125];
 
 // 最新接收到的边沿点
@@ -95,26 +95,26 @@ pcl::PointCloud<PointType>::Ptr laserCloudSurfArray2[laserCloudNum];
 pcl::KdTreeFLANN<PointType>::Ptr kdtreeCornerFromMap(new pcl::KdTreeFLANN<PointType>());
 pcl::KdTreeFLANN<PointType>::Ptr kdtreeSurfFromMap(new pcl::KdTreeFLANN<PointType>());
 
-/*************高频转换量？？？**************/
+/*************高频转换量???**************/
 // odometry计算得到的到世界坐标系下的转移矩阵
 float transformSum[6] = {0};
 // 转移增量，只使用了后三个平移增量
 float transformIncre[6] = {0};
 
-/*************低频转换量？？？*************/
-// 以起始位置为原点的世界坐标系下的转换矩阵（猜测与调整的对象）？？？
+/*************低频转换量???*************/
+// 以起始位置为原点的世界坐标系下的转换矩阵(猜测与调整的对象)???
 float transformTobeMapped[6] = {0};
 // 存放mapping之前的Odometry计算的世界坐标系的转换矩阵（注：低频量，不一定与transformSum一样）
 float transformBefMapped[6] = {0};
 // 存放mapping之后的经过mapping微调之后的转换矩阵
 float transformAftMapped[6] = {0};
 
-int imuPointerFront = 0;
-int imuPointerLast = -1;
+int imuPointerFront    = 0;
+int imuPointerLast     = -1;
 const int imuQueLength = 200;
 
 double imuTime[imuQueLength] = {0};
-float imuRoll[imuQueLength] = {0};
+float imuRoll[imuQueLength]  = {0};
 float imuPitch[imuQueLength] = {0};
 
 // 基于匀速模型，根据上次微调的结果和odometry这次与上次计算的结果，猜测一个新的世界坐标系的转换矩阵transformTobeMapped
@@ -154,16 +154,16 @@ void transformAssociateToMap()
   float salz = sin(transformAftMapped[2]);
   float calz = cos(transformAftMapped[2]);
 
-  float srx = -sbcx * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz) - cbcx * sbcy * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - cbcx * cbcy * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx);
+  float srx              = -sbcx * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz) - cbcx * sbcy * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - cbcx * cbcy * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx);
   transformTobeMapped[0] = -asin(srx);
 
-  float srycrx = sbcx * (cblx * cblz * (caly * salz - calz * salx * saly) - cblx * sblz * (caly * calz + salx * saly * salz) + calx * saly * sblx) - cbcx * cbcy * ((caly * calz + salx * saly * salz) * (cblz * sbly - cbly * sblx * sblz) + (caly * salz - calz * salx * saly) * (sbly * sblz + cbly * cblz * sblx) - calx * cblx * cbly * saly) + cbcx * sbcy * ((caly * calz + salx * saly * salz) * (cbly * cblz + sblx * sbly * sblz) + (caly * salz - calz * salx * saly) * (cbly * sblz - cblz * sblx * sbly) + calx * cblx * saly * sbly);
-  float crycrx = sbcx * (cblx * sblz * (calz * saly - caly * salx * salz) - cblx * cblz * (saly * salz + caly * calz * salx) + calx * caly * sblx) + cbcx * cbcy * ((saly * salz + caly * calz * salx) * (sbly * sblz + cbly * cblz * sblx) + (calz * saly - caly * salx * salz) * (cblz * sbly - cbly * sblx * sblz) + calx * caly * cblx * cbly) - cbcx * sbcy * ((saly * salz + caly * calz * salx) * (cbly * sblz - cblz * sblx * sbly) + (calz * saly - caly * salx * salz) * (cbly * cblz + sblx * sbly * sblz) - calx * caly * cblx * sbly);
+  float srycrx           = sbcx * (cblx * cblz * (caly * salz - calz * salx * saly) - cblx * sblz * (caly * calz + salx * saly * salz) + calx * saly * sblx) - cbcx * cbcy * ((caly * calz + salx * saly * salz) * (cblz * sbly - cbly * sblx * sblz) + (caly * salz - calz * salx * saly) * (sbly * sblz + cbly * cblz * sblx) - calx * cblx * cbly * saly) + cbcx * sbcy * ((caly * calz + salx * saly * salz) * (cbly * cblz + sblx * sbly * sblz) + (caly * salz - calz * salx * saly) * (cbly * sblz - cblz * sblx * sbly) + calx * cblx * saly * sbly);
+  float crycrx           = sbcx * (cblx * sblz * (calz * saly - caly * salx * salz) - cblx * cblz * (saly * salz + caly * calz * salx) + calx * caly * sblx) + cbcx * cbcy * ((saly * salz + caly * calz * salx) * (sbly * sblz + cbly * cblz * sblx) + (calz * saly - caly * salx * salz) * (cblz * sbly - cbly * sblx * sblz) + calx * caly * cblx * cbly) - cbcx * sbcy * ((saly * salz + caly * calz * salx) * (cbly * sblz - cblz * sblx * sbly) + (calz * saly - caly * salx * salz) * (cbly * cblz + sblx * sbly * sblz) - calx * caly * cblx * sbly);
   transformTobeMapped[1] = atan2(srycrx / cos(transformTobeMapped[0]),
-                                 crycrx / cos(transformTobeMapped[0])); // 为什么有两个参数？？？
+                                 crycrx / cos(transformTobeMapped[0])); // 为什么有两个参数???
 
-  float srzcrx = (cbcz * sbcy - cbcy * sbcx * sbcz) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) - (cbcy * cbcz + sbcx * sbcy * sbcz) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) + cbcx * sbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
-  float crzcrx = (cbcy * sbcz - cbcz * sbcx * sbcy) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - (sbcy * sbcz + cbcy * cbcz * sbcx) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) + cbcx * cbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
+  float srzcrx           = (cbcz * sbcy - cbcy * sbcx * sbcz) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) - (cbcy * cbcz + sbcx * sbcy * sbcz) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) + cbcx * sbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
+  float crzcrx           = (cbcy * sbcz - cbcz * sbcx * sbcy) * (calx * calz * (cbly * sblz - cblz * sblx * sbly) - calx * salz * (cbly * cblz + sblx * sbly * sblz) + cblx * salx * sbly) - (sbcy * sbcz + cbcy * cbcz * sbcx) * (calx * salz * (cblz * sbly - cbly * sblx * sblz) - calx * calz * (sbly * sblz + cbly * cblz * sblx) + cblx * cbly * salx) + cbcx * cbcz * (salx * sblx + calx * cblx * salz * sblz + calx * calz * cblx * cblz);
   transformTobeMapped[2] = atan2(srzcrx / cos(transformTobeMapped[0]),
                                  crzcrx / cos(transformTobeMapped[0]));
 
@@ -171,7 +171,7 @@ void transformAssociateToMap()
   y1 = sin(transformTobeMapped[2]) * transformIncre[3] + cos(transformTobeMapped[2]) * transformIncre[4];
   z1 = transformIncre[5];
 
-  x2 = x1; // ？？？
+  x2 = x1;
   y2 = cos(transformTobeMapped[0]) * y1 - sin(transformTobeMapped[0]) * z1;
   z2 = sin(transformTobeMapped[0]) * y1 + cos(transformTobeMapped[0]) * z1;
 
@@ -198,17 +198,17 @@ void transformUpdate()
 
     if (timeLaserOdometry + scanPeriod > imuTime[imuPointerFront])
     { // 未找到,此时imuPointerFront==imuPointerLast
-      imuRollLast = imuRoll[imuPointerFront];
+      imuRollLast  = imuRoll[imuPointerFront];
       imuPitchLast = imuPitch[imuPointerFront];
     }
     else
     {
       int imuPointerBack = (imuPointerFront + imuQueLength - 1) % imuQueLength;
-      float ratioFront = (timeLaserOdometry + scanPeriod - imuTime[imuPointerBack]) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
-      float ratioBack = (imuTime[imuPointerFront] - timeLaserOdometry - scanPeriod) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
+      float ratioFront   = (timeLaserOdometry + scanPeriod - imuTime[imuPointerBack]) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
+      float ratioBack    = (imuTime[imuPointerFront] - timeLaserOdometry - scanPeriod) / (imuTime[imuPointerFront] - imuTime[imuPointerBack]);
 
       // 按时间比例求翻滚角和俯仰角
-      imuRollLast = imuRoll[imuPointerFront] * ratioFront + imuRoll[imuPointerBack] * ratioBack;
+      imuRollLast  = imuRoll[imuPointerFront] * ratioFront + imuRoll[imuPointerBack] * ratioBack;
       imuPitchLast = imuPitch[imuPointerFront] * ratioFront + imuPitch[imuPointerBack] * ratioBack;
     }
 
@@ -239,9 +239,9 @@ void pointAssociateToMap(PointType const *const pi, PointType *const po)
   float z2 = sin(transformTobeMapped[0]) * y1 + cos(transformTobeMapped[0]) * z1;
 
   // 绕y轴旋转（transformTobeMapped[1]），再平移
-  po->x = cos(transformTobeMapped[1]) * x2 + sin(transformTobeMapped[1]) * z2 + transformTobeMapped[3];
-  po->y = y2 + transformTobeMapped[4];
-  po->z = -sin(transformTobeMapped[1]) * x2 + cos(transformTobeMapped[1]) * z2 + transformTobeMapped[5];
+  po->x         = cos(transformTobeMapped[1]) * x2 + sin(transformTobeMapped[1]) * z2 + transformTobeMapped[3];
+  po->y         = y2 + transformTobeMapped[4];
+  po->z         = -sin(transformTobeMapped[1]) * x2 + cos(transformTobeMapped[1]) * z2 + transformTobeMapped[5];
   po->intensity = pi->intensity;
 }
 
@@ -259,9 +259,9 @@ void pointAssociateTobeMapped(PointType const *const pi, PointType *const po)
   float z2 = -sin(transformTobeMapped[0]) * y1 + cos(transformTobeMapped[0]) * z1;
 
   // 绕z轴旋转（-transformTobeMapped[2]）
-  po->x = cos(transformTobeMapped[2]) * x2 + sin(transformTobeMapped[2]) * y2;
-  po->y = -sin(transformTobeMapped[2]) * x2 + cos(transformTobeMapped[2]) * y2;
-  po->z = z2;
+  po->x         = cos(transformTobeMapped[2]) * x2 + sin(transformTobeMapped[2]) * y2;
+  po->y         = -sin(transformTobeMapped[2]) * x2 + cos(transformTobeMapped[2]) * y2;
+  po->z         = z2;
   po->intensity = pi->intensity;
 }
 
@@ -329,8 +329,8 @@ void imuHandler(const sensor_msgs::Imu::ConstPtr &imuIn)
 
   imuPointerLast = (imuPointerLast + 1) % imuQueLength;
 
-  imuTime[imuPointerLast] = imuIn->header.stamp.toSec();
-  imuRoll[imuPointerLast] = roll;
+  imuTime[imuPointerLast]  = imuIn->header.stamp.toSec();
+  imuRoll[imuPointerLast]  = roll;
   imuPitch[imuPointerLast] = pitch;
 }
 
@@ -356,11 +356,11 @@ int main(int argc, char **argv)
   ros::Publisher pubOdomAftMapped = nh.advertise<nav_msgs::Odometry>("/aft_mapped_to_init", 5);
   nav_msgs::Odometry odomAftMapped;
   odomAftMapped.header.frame_id = "/camera_init";
-  odomAftMapped.child_frame_id = "/aft_mapped";
+  odomAftMapped.child_frame_id  = "/aft_mapped";
 
   tf::TransformBroadcaster tfBroadcaster;
   tf::StampedTransform aftMappedTrans;
-  aftMappedTrans.frame_id_ = "/camera_init";
+  aftMappedTrans.frame_id_       = "/camera_init";
   aftMappedTrans.child_frame_id_ = "/aft_mapped";
 
   std::vector<int> pointSearchInd;
@@ -368,13 +368,13 @@ int main(int argc, char **argv)
 
   PointType pointOri, pointSel, pointProj, coeff;
 
-  cv::Mat matA0(5, 3, CV_32F, cv::Scalar::all(0));  //
-  cv::Mat matB0(5, 1, CV_32F, cv::Scalar::all(-1)); //
-  cv::Mat matX0(3, 1, CV_32F, cv::Scalar::all(0));  //
-                                                    //
-  cv::Mat matA1(3, 3, CV_32F, cv::Scalar::all(0));  //
-  cv::Mat matD1(1, 3, CV_32F, cv::Scalar::all(0));  // eigenvalue
-  cv::Mat matV1(3, 3, CV_32F, cv::Scalar::all(0));  // eigen vector
+  cv::Mat matA0(5, 3, CV_32F, cv::Scalar::all(0)); // Ax=B
+  cv::Mat matB0(5, 1, CV_32F, cv::Scalar::all(-1));
+  cv::Mat matX0(3, 1, CV_32F, cv::Scalar::all(0));
+
+  cv::Mat matA1(3, 3, CV_32F, cv::Scalar::all(0)); // covariance matrix of point's neighbors
+  cv::Mat matD1(1, 3, CV_32F, cv::Scalar::all(0)); // eigenvalue
+  cv::Mat matV1(3, 3, CV_32F, cv::Scalar::all(0)); // eigen vector
 
   bool isDegenerate = false;
   cv::Mat matP(6, 6, CV_32F, cv::Scalar::all(0));
@@ -399,8 +399,8 @@ int main(int argc, char **argv)
     laserCloudSurfArray2[i].reset(new pcl::PointCloud<PointType>());
   }
 
-  int frameCount = stackFrameNum - 1;  // 0
-  int mapFrameCount = mapFrameNum - 1; // 4
+  int frameCount    = stackFrameNum - 1; // cnt from last map optimization;initial value is 0.
+  int mapFrameCount = mapFrameNum - 1;   // cnt from last publish cloud map to visualize;initial value is 4.
   ros::Rate rate(100);
   bool status = ros::ok();
   while (status)
@@ -408,24 +408,24 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     // if they are at the same time
-    if (newLaserCloudCornerLast && newLaserCloudSurfLast && newLaserCloudFullRes && newLaserOdometry &&
-        fabs(timeLaserCloudCornerLast - timeLaserOdometry) < 0.005 &&
-        fabs(timeLaserCloudSurfLast - timeLaserOdometry) < 0.005 &&
-        fabs(timeLaserCloudFullRes - timeLaserOdometry) < 0.005)
+    if (newLaserCloudCornerLast && newLaserCloudSurfLast && newLaserCloudFullRes && newLaserOdometry
+        && fabs(timeLaserCloudCornerLast - timeLaserOdometry) < 0.005
+        && fabs(timeLaserCloudSurfLast - timeLaserOdometry) < 0.005
+        && fabs(timeLaserCloudFullRes - timeLaserOdometry) < 0.005)
     {
       newLaserCloudCornerLast = false;
-      newLaserCloudSurfLast = false;
-      newLaserCloudFullRes = false;
-      newLaserOdometry = false;
+      newLaserCloudSurfLast   = false;
+      newLaserCloudFullRes    = false;
+      newLaserOdometry        = false;
 
       frameCount++;
-      // 控制跳帧数，>=这里实际并没有跳帧，只取>或者增大stackFrameNum才能实现相应的跳帧处理
+      // 控制跳帧数，>=这里实际并没有跳帧，因为stackFrameNum默认为1,只取>或者增大stackFrameNum才能实现相应的跳帧处理
       if (frameCount >= stackFrameNum)
       {
-        // 获取世界坐标系转换矩阵
+        // 获取猜测的世界坐标系转换矩阵
         transformAssociateToMap();
 
-        // 将最新接收到的平面点和边沿点进行旋转平移转换到世界坐标系下
+        // 根据上一个函数获得的转换矩阵，将最新接收到的平面点和边沿点进行旋转平移转换到世界坐标系下
         int laserCloudCornerLastNum = laserCloudCornerLast->points.size();
         for (int i = 0; i < laserCloudCornerLastNum; i++)
         {
@@ -505,11 +505,11 @@ int main(int argc, char **argv)
               laserCloudCubeCornerPointer->clear();
               laserCloudCubeSurfPointer->clear();
             }
-          }
+          } // endfor: moved map by one grid
 
           centerCubeI++;
           laserCloudCenWidth++;
-        }
+        } // endwhile: moved map
 
         // 如果处于上边界，表明地图向正方向延伸的可能性比较大，则循环移位，将数组中心点向下边界调整一个单位
         while (centerCubeI >= laserCloudWidth - 3)
@@ -672,7 +672,7 @@ int main(int argc, char **argv)
           laserCloudCenDepth--;
         }
 
-        int laserCloudValidNum = 0;
+        int laserCloudValidNum    = 0;
         int laserCloudSurroundNum = 0;
         // 在每一维附近5个cube(前2个，后2个，中间1个)里进行查找（前后250米范围内，总共500米范围），三个维度总共125个cube
         // 在这125个cube里面进一步筛选在视域范围内的cube
@@ -682,7 +682,7 @@ int main(int argc, char **argv)
           {
             for (int k = centerCubeK - 2; k <= centerCubeK + 2; k++)
             {
-              // 如果索引合法
+              // 如果索引合法,在这125个cube里面进一步筛选在视域范围内的cube
               if (i >= 0 && i < laserCloudWidth && j >= 0 && j < laserCloudHeight && k >= 0 && k < laserCloudDepth)
               {
                 // 换算成实际比例，在世界坐标系下的坐标
@@ -703,17 +703,20 @@ int main(int argc, char **argv)
                       float cornerZ = centerZ + 25.0 * kk;
 
                       // 原点到顶点距离的平方和
-                      float squaredSide1 = (transformTobeMapped[3] - cornerX) * (transformTobeMapped[3] - cornerX) + (transformTobeMapped[4] - cornerY) * (transformTobeMapped[4] - cornerY) + (transformTobeMapped[5] - cornerZ) * (transformTobeMapped[5] - cornerZ);
+                      float squaredSide1 = (transformTobeMapped[3] - cornerX) * (transformTobeMapped[3] - cornerX)
+                                           + (transformTobeMapped[4] - cornerY) * (transformTobeMapped[4] - cornerY)
+                                           + (transformTobeMapped[5] - cornerZ) * (transformTobeMapped[5] - cornerZ);
 
                       // pointOnYAxis到顶点距离的平方和
-                      float squaredSide2 = (pointOnYAxis.x - cornerX) * (pointOnYAxis.x - cornerX) + (pointOnYAxis.y - cornerY) * (pointOnYAxis.y - cornerY) + (pointOnYAxis.z - cornerZ) * (pointOnYAxis.z - cornerZ);
-
+                      float squaredSide2 = (pointOnYAxis.x - cornerX) * (pointOnYAxis.x - cornerX)
+                                           + (pointOnYAxis.y - cornerY) * (pointOnYAxis.y - cornerY)
+                                           + (pointOnYAxis.z - cornerZ) * (pointOnYAxis.z - cornerZ);
+                      //???
                       float check1 = 100.0 + squaredSide1 - squaredSide2 - 10.0 * sqrt(3.0) * sqrt(squaredSide1);
-
                       float check2 = 100.0 + squaredSide1 - squaredSide2 + 10.0 * sqrt(3.0) * sqrt(squaredSide1);
-
+                      // |100.0 + squaredSide1 - squaredSide2| < 10.0 * sqrt(3.0) * sqrt(squaredSide1)
                       if (check1 < 0 && check2 > 0)
-                      { // if |100 + squaredSide1 - squaredSide2| < 10.0 * sqrt(3.0) * sqrt(squaredSide1)
+                      {
                         isInLaserFOV = true;
                       }
                     }
@@ -745,7 +748,7 @@ int main(int argc, char **argv)
           *laserCloudSurfFromMap += *laserCloudSurfArray[laserCloudValidInd[i]];
         }
         int laserCloudCornerFromMapNum = laserCloudCornerFromMap->points.size();
-        int laserCloudSurfFromMapNum = laserCloudSurfFromMap->points.size();
+        int laserCloudSurfFromMapNum   = laserCloudSurfFromMap->points.size();
 
         /************************** updated local map **************************/
 
@@ -791,7 +794,8 @@ int main(int argc, char **argv)
               pointOri = laserCloudCornerStack->points[i];
               // 转换回世界坐标系
               pointAssociateToMap(&pointOri, &pointSel);
-              kdtreeCornerFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis); // 寻找最近距离五个点
+              // 寻找最近距离五个点
+              kdtreeCornerFromMap->nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis);
 
               // 5个点中最大距离不超过1才处理
               if (pointSearchSqDis[4] < 1.0)
@@ -864,24 +868,17 @@ int main(int argc, char **argv)
                   float y2 = cy - 0.1 * matV1.at<float>(0, 1);
                   float z2 = cz - 0.1 * matV1.at<float>(0, 2);
 
-                  float a012 =
-                      sqrt(((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) +
-                           ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1)) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1)) +
-                           ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)));
+                  float a012 = sqrt(((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1))
+                                    + ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1)) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))
+                                    + ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1)));
 
                   float l12 = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 
-                  float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) +
-                              (z1 - z2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))) /
-                             a012 / l12;
+                  float la = ((y1 - y2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) + (z1 - z2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1))) / a012 / l12;
 
-                  float lb = -((x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) -
-                               (z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) /
-                             a012 / l12;
+                  float lb = -((x1 - x2) * ((x0 - x1) * (y0 - y2) - (x0 - x2) * (y0 - y1)) - (z1 - z2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
 
-                  float lc = -((x1 - x2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1)) +
-                               (y1 - y2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) /
-                             a012 / l12;
+                  float lc = -((x1 - x2) * ((x0 - x1) * (z0 - z2) - (x0 - x2) * (z0 - z1)) + (y1 - y2) * ((y0 - y1) * (z0 - z2) - (y0 - y2) * (z0 - z1))) / a012 / l12;
 
                   float ld2 = a012 / l12;
 
@@ -892,15 +889,15 @@ int main(int argc, char **argv)
                   pointProj.z -= lc * ld2;
 
                   // 权重系数计算
-                  float s = 1 - 0.9 * fabs(ld2);
-
-                  coeff.x = s * la;
-                  coeff.y = s * lb;
-                  coeff.z = s * lc;
+                  float s         = 1 - 0.9 * fabs(ld2);
+                  coeff.x         = s * la;
+                  coeff.y         = s * lb;
+                  coeff.z         = s * lc;
                   coeff.intensity = s * ld2;
 
+                  // 距离足够小才使用
                   if (s > 0.1)
-                  { // 距离足够小才使用
+                  {
                     laserCloudOri->push_back(pointOri);
                     coeffSel->push_back(coeff);
                   }
@@ -943,9 +940,7 @@ int main(int argc, char **argv)
                 for (int j = 0; j < 5; j++)
                 {
                   // distance between point and plane
-                  if (fabs(pa * laserCloudSurfFromMap->points[pointSearchInd[j]].x +
-                           pb * laserCloudSurfFromMap->points[pointSearchInd[j]].y +
-                           pc * laserCloudSurfFromMap->points[pointSearchInd[j]].z + pd) > 0.2)
+                  if (fabs(pa * laserCloudSurfFromMap->points[pointSearchInd[j]].x + pb * laserCloudSurfFromMap->points[pointSearchInd[j]].y + pc * laserCloudSurfFromMap->points[pointSearchInd[j]].z + pd) > 0.2)
                   {
                     planeValid = false;
                     break;
@@ -964,9 +959,9 @@ int main(int argc, char **argv)
 
                   float s = 1 - 0.9 * fabs(pd2) / sqrt(sqrt(pointSel.x * pointSel.x + pointSel.y * pointSel.y + pointSel.z * pointSel.z));
 
-                  coeff.x = s * pa;
-                  coeff.y = s * pb;
-                  coeff.z = s * pc;
+                  coeff.x         = s * pa;
+                  coeff.y         = s * pb;
+                  coeff.z         = s * pc;
                   coeff.intensity = s * pd2;
 
                   if (s > 0.1)
@@ -1001,7 +996,7 @@ int main(int argc, char **argv)
             for (int i = 0; i < laserCloudSelNum; i++)
             {
               pointOri = laserCloudOri->points[i];
-              coeff = coeffSel->points[i];
+              coeff    = coeffSel->points[i];
 
               float arx = (crx * sry * srz * pointOri.x + crx * crz * sry * pointOri.y - srx * sry * pointOri.z) * coeff.x + (-srx * srz * pointOri.x - crz * srx * pointOri.y - crx * pointOri.z) * coeff.y + (crx * cry * srz * pointOri.x + crx * cry * crz * pointOri.y - cry * srx * pointOri.z) * coeff.z;
 
@@ -1032,7 +1027,7 @@ int main(int argc, char **argv)
               cv::eigen(matAtA, matE, matV);
               matV.copyTo(matV2);
 
-              isDegenerate = false;
+              isDegenerate      = false;
               float eignThre[6] = {100, 100, 100, 100, 100, 100};
               for (int i = 5; i >= 0; i--)
               {
@@ -1067,12 +1062,8 @@ int main(int argc, char **argv)
             transformTobeMapped[4] += matX.at<float>(4, 0);
             transformTobeMapped[5] += matX.at<float>(5, 0);
 
-            float deltaR = sqrt(pow(rad2deg(matX.at<float>(0, 0)), 2) +
-                                pow(rad2deg(matX.at<float>(1, 0)), 2) +
-                                pow(rad2deg(matX.at<float>(2, 0)), 2));
-            float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) +
-                                pow(matX.at<float>(4, 0) * 100, 2) +
-                                pow(matX.at<float>(5, 0) * 100, 2));
+            float deltaR = sqrt(pow(rad2deg(matX.at<float>(0, 0)), 2) + pow(rad2deg(matX.at<float>(1, 0)), 2) + pow(rad2deg(matX.at<float>(2, 0)), 2));
+            float deltaT = sqrt(pow(matX.at<float>(3, 0) * 100, 2) + pow(matX.at<float>(4, 0) * 100, 2) + pow(matX.at<float>(5, 0) * 100, 2));
 
             // 旋转平移量足够小就停止迭代
             if (deltaR < 0.05 && deltaT < 0.05)
@@ -1109,9 +1100,7 @@ int main(int argc, char **argv)
             cubeK--;
           }
           // 只挑选-laserCloudCenWidth * 50.0 < point.x < laserCloudCenWidth * 50.0范围内的点，y和z同理
-          if (cubeI >= 0 && cubeI < laserCloudWidth &&
-              cubeJ >= 0 && cubeJ < laserCloudHeight &&
-              cubeK >= 0 && cubeK < laserCloudDepth)
+          if (cubeI >= 0 && cubeI < laserCloudWidth && cubeJ >= 0 && cubeJ < laserCloudHeight && cubeK >= 0 && cubeK < laserCloudDepth)
           {
             // 按照尺度放进不同的组，每个组的点数量各异
             int cubeInd = cubeI + laserCloudWidth * cubeJ + laserCloudWidth * laserCloudHeight * cubeK;
@@ -1141,9 +1130,7 @@ int main(int argc, char **argv)
             cubeK--;
           }
 
-          if (cubeI >= 0 && cubeI < laserCloudWidth &&
-              cubeJ >= 0 && cubeJ < laserCloudHeight &&
-              cubeK >= 0 && cubeK < laserCloudDepth)
+          if (cubeI >= 0 && cubeI < laserCloudWidth && cubeJ >= 0 && cubeJ < laserCloudHeight && cubeK >= 0 && cubeK < laserCloudDepth)
           {
             int cubeInd = cubeI + laserCloudWidth * cubeJ + laserCloudWidth * laserCloudHeight * cubeK;
             laserCloudSurfArray[cubeInd]->push_back(pointSel);
@@ -1165,11 +1152,11 @@ int main(int argc, char **argv)
 
           // Array与Array2交换，即滤波后自我更新
           pcl::PointCloud<PointType>::Ptr laserCloudTemp = laserCloudCornerArray[ind];
-          laserCloudCornerArray[ind] = laserCloudCornerArray2[ind];
-          laserCloudCornerArray2[ind] = laserCloudTemp;
+          laserCloudCornerArray[ind]                     = laserCloudCornerArray2[ind];
+          laserCloudCornerArray2[ind]                    = laserCloudTemp;
 
-          laserCloudTemp = laserCloudSurfArray[ind];
-          laserCloudSurfArray[ind] = laserCloudSurfArray2[ind];
+          laserCloudTemp            = laserCloudSurfArray[ind];
+          laserCloudSurfArray[ind]  = laserCloudSurfArray2[ind];
           laserCloudSurfArray2[ind] = laserCloudTemp;
         }
 
@@ -1193,7 +1180,7 @@ int main(int argc, char **argv)
 
           sensor_msgs::PointCloud2 laserCloudSurround3;
           pcl::toROSMsg(*laserCloudSurround, laserCloudSurround3);
-          laserCloudSurround3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+          laserCloudSurround3.header.stamp    = ros::Time().fromSec(timeLaserOdometry);
           laserCloudSurround3.header.frame_id = "/camera_init";
           pubLaserCloudSurround.publish(laserCloudSurround3);
         }
@@ -1207,27 +1194,27 @@ int main(int argc, char **argv)
 
         sensor_msgs::PointCloud2 laserCloudFullRes3;
         pcl::toROSMsg(*laserCloudFullRes, laserCloudFullRes3);
-        laserCloudFullRes3.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+        laserCloudFullRes3.header.stamp    = ros::Time().fromSec(timeLaserOdometry);
         laserCloudFullRes3.header.frame_id = "/camera_init";
         pubLaserCloudFullRes.publish(laserCloudFullRes3);
 
         geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw(transformAftMapped[2], -transformAftMapped[0], -transformAftMapped[1]);
 
-        odomAftMapped.header.stamp = ros::Time().fromSec(timeLaserOdometry);
+        odomAftMapped.header.stamp            = ros::Time().fromSec(timeLaserOdometry);
         odomAftMapped.pose.pose.orientation.x = -geoQuat.y;
         odomAftMapped.pose.pose.orientation.y = -geoQuat.z;
         odomAftMapped.pose.pose.orientation.z = geoQuat.x;
         odomAftMapped.pose.pose.orientation.w = geoQuat.w;
-        odomAftMapped.pose.pose.position.x = transformAftMapped[3];
-        odomAftMapped.pose.pose.position.y = transformAftMapped[4];
-        odomAftMapped.pose.pose.position.z = transformAftMapped[5];
+        odomAftMapped.pose.pose.position.x    = transformAftMapped[3];
+        odomAftMapped.pose.pose.position.y    = transformAftMapped[4];
+        odomAftMapped.pose.pose.position.z    = transformAftMapped[5];
         // 扭转量: transformation between frame and child frame
         odomAftMapped.twist.twist.angular.x = transformBefMapped[0];
         odomAftMapped.twist.twist.angular.y = transformBefMapped[1];
         odomAftMapped.twist.twist.angular.z = transformBefMapped[2];
-        odomAftMapped.twist.twist.linear.x = transformBefMapped[3];
-        odomAftMapped.twist.twist.linear.y = transformBefMapped[4];
-        odomAftMapped.twist.twist.linear.z = transformBefMapped[5];
+        odomAftMapped.twist.twist.linear.x  = transformBefMapped[3];
+        odomAftMapped.twist.twist.linear.y  = transformBefMapped[4];
+        odomAftMapped.twist.twist.linear.z  = transformBefMapped[5];
         pubOdomAftMapped.publish(odomAftMapped);
 
         // 广播坐标系旋转平移参量
