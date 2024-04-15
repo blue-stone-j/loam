@@ -1,7 +1,9 @@
 # LOAM_NOTED
 source code: https://github.com/cuitaixiang/LOAM_NOTED
 
-article: LOAM Lidar Odometry and Mapping in Real-time
+[article1](https://github.com/blue-stone-j/papers/blob/main/2014%20LOAM%20Lidar%20Odometry%20and%20Mapping%20in%20Real-time.pdf): LOAM Lidar Odometry and Mapping in Real-time
+
+[article2](https://github.com/blue-stone-j/papers/blob/main/2016%20Low-drift%20and%20real-time%20lidar%20odometry%20and%20mapping.pdf): LOAM Lidar Odometry and Mapping in Real-time
 
 LOAM中文注解版，若有差错欢迎指正～
 
