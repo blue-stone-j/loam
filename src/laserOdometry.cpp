@@ -10,7 +10,8 @@
 
 #include <loam_velodyne/common.h>
 #include <nav_msgs/Odometry.h>
-#include <opencv/cv.h>
+// #include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
